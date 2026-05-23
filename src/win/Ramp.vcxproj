@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7B2E4C10-9A3D-4F62-BB21-0C7A1E55AA01}</ProjectGuid>
+    <RootNamespace>Ramp</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <!-- SDK / output locations. Environment variables override these defaults. -->
+  <PropertyGroup Label="UserMacros">
+    <AE_SDK_PATH Condition="'$(AE_SDK_PATH)'==''">F:\YandexDisk\aaa_AEstuff\ramp_ae_kpx\AfterEffectsSDK_25.6_61_win\AfterEffectsSDK_25.6_61_win\ae25.6_61.64bit.AfterEffectsSDK</AE_SDK_PATH>
+    <AE_SDK_EXAMPLES>$(AE_SDK_PATH)\Examples</AE_SDK_EXAMPLES>
+    <AE_PLUGIN_BUILD_DIR Condition="'$(AE_PLUGIN_BUILD_DIR)'==''">$(ProjectDir)..\..\build\plugins</AE_PLUGIN_BUILD_DIR>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <OutDir>$(AE_PLUGIN_BUILD_DIR)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <TargetExt>.aex</TargetExt>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(AE_SDK_EXAMPLES)\Headers;$(AE_SDK_EXAMPLES)\Headers\SP;$(AE_SDK_EXAMPLES)\Headers\Win;$(AE_SDK_EXAMPLES)\Resources;$(AE_SDK_EXAMPLES)\Util;$(ProjectDir)..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>MSWindows;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>$(AE_SDK_EXAMPLES)\Headers;$(AE_SDK_EXAMPLES)\Headers\SP;$(AE_SDK_EXAMPLES)\Headers\Win;$(AE_SDK_EXAMPLES)\Resources;$(AE_SDK_EXAMPLES)\Util;$(ProjectDir)..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>MSWindows;WIN32;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="$(AE_SDK_EXAMPLES)\Util\AEFX_SuiteHelper.c" />
+    <ClCompile Include="$(AE_SDK_EXAMPLES)\Util\AEGP_SuiteHandler.cpp" />
+    <ClCompile Include="$(AE_SDK_EXAMPLES)\Util\MissingSuiteError.cpp" />
+    <ClCompile Include="$(AE_SDK_EXAMPLES)\Util\Smart_Utils.cpp" />
+    <ClCompile Include="..\Ramp.cpp" />
+    <ClCompile Include="..\GradientData.cpp" />
+    <ClCompile Include="..\GradientUI.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Ramp.h" />
+    <ClInclude Include="..\color_math.h" />
+    <ClInclude Include="..\RampShapes.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\RampPiPL.r">
+      <Message>Compiling the PiPL</Message>
+      <Command>cl /I "$(AE_SDK_EXAMPLES)\Headers" /EP "..\%(Filename).r" &gt; "$(IntDir)%(Filename).rr"
+"$(AE_SDK_EXAMPLES)\Resources\PiPLtool" "$(IntDir)%(Filename).rr" "$(IntDir)%(Filename).rrc"
+cl /D "MSWindows" /EP "$(IntDir)%(Filename).rrc" &gt; "$(ProjectDir)%(Filename).rc"
+</Command>
+      <Outputs>$(ProjectDir)%(Filename).rc;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="RampPiPL.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

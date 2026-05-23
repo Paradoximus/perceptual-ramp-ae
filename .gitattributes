@@ -1,0 +1,8 @@
+# Normalize line endings; keep CRLF for Windows project files.
+* text=auto
+*.cpp text
+*.h   text
+*.r   text
+*.ps1 text eol=crlf
+*.vcxproj text eol=crlf
+*.aex binary

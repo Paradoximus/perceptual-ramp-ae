@@ -1,0 +1,31 @@
+# --- Adobe After Effects SDK (proprietary — never commit) ---
+AfterEffectsSDK_*
+*.zstd.zip
+ae*.AfterEffectsSDK*
+
+# --- Build outputs / intermediates ---
+build/
+src/win/x64/
+src/win/*.rc
+src/win/*.aps
+src/win/*.user
+*.aex
+*.obj
+*.lib
+*.exp
+*.pdb
+*.idb
+*.ilk
+*.tlb
+*.bsc
+*.sbr
+*.rr
+*.rrc
+
+# --- Visual Studio ---
+.vs/
+*.suo
+
+# --- tooling / scratch ---
+.claude/
+вв
