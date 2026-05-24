@@ -12,7 +12,7 @@ naïve sRGB blending.
 Grab the latest `.aex` here → **[Releases](https://github.com/Paradoximus/perceptual-ramp-ae/releases/latest)**,
 drop it into your After Effects `Plug-ins` folder, restart AE. No build needed.
 
-![menu category KPX](docs/screenshot.png)
+<!-- Add a screenshot at docs/screenshot.png and it will appear here. -->
 
 ## Why
 
