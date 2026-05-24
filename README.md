@@ -30,9 +30,10 @@ The same two-color midpoint, measured by OKLab lightness:
 - **Multi-stop gradient editor** in the Effect Controls: live preview bar with
   draggable markers — click the bar to add a stop, drag to move, double-click for
   the color picker, Alt-click to delete.
-- **Shapes:** Linear, Radial, Angular, Reflected, Diamond — driven by two
-  on-canvas points (Start / End). Plus Repeat (None/Repeat/Mirror), Offset,
-  Reverse.
+- **Shapes:** Linear, Radial, Angular, Reflected, Diamond, Ellipse, Star,
+  Polygon, Spiral, Square — driven by two on-canvas points (Start / End), with
+  Sides/Points, Star Inner and Twist controls. Plus Repeat (None/Repeat/Mirror),
+  Offset, Reverse.
 - **From Map** mode: drive the gradient position from the **luminance of any
   layer** (with Input Black / White remap). Defaults to the layer itself.
 - **Smart FX**, 8 / 16 / **32-bit float**, multi-threaded.

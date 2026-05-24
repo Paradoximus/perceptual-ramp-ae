@@ -155,6 +155,15 @@ ParamsSetup(PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *params[], PF_
 	PF_ADD_CHECKBOXX("Reverse", FALSE, 0, REVERSE_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
+	PF_ADD_FLOAT_SLIDERX("Sides / Points", 2, 64, 3, 20, 5, PF_Precision_INTEGER, 0, 0, SIDES_DISK_ID);
+
+	AEFX_CLR_STRUCT(def);
+	PF_ADD_FLOAT_SLIDERX("Star Inner", 0, 100, 0, 100, 40, PF_Precision_TENTHS, PF_ValueDisplayFlag_PERCENT, 0, STAR_RATIO_DISK_ID);
+
+	AEFX_CLR_STRUCT(def);
+	PF_ADD_FLOAT_SLIDERX("Twist", -20, 20, -10, 10, 2, PF_Precision_HUNDREDTHS, 0, 0, TWIST_DISK_ID);
+
+	AEFX_CLR_STRUCT(def);
 	PF_ADD_POPUP("Interpolation", RAMP_SPACE_COUNT, RAMP_SPACE_DFLT, RAMP_SPACE_CHOICES, SPACE_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
@@ -190,6 +199,7 @@ static void
 BuildRenderInfo(PF_Handle arbH, AEGP_SuiteHandler &suites,
 				int shapeType, float sx, float sy, float ex, float ey,
 				int repeat, float offset, int reverse,
+				int sides, float innerRatio, float twist,
 				int space, int hue,
 				PF_EffectWorld *mapWorld, float inBlack, float inWhite,
 				RampRenderInfo *ri)
@@ -216,6 +226,9 @@ BuildRenderInfo(PF_Handle arbH, AEGP_SuiteHandler &suites,
 	sp.repeat = (shapes::Repeat)repeat;
 	sp.offset = offset;
 	sp.reverse = (reverse != 0);
+	sp.sides = sides;
+	sp.innerRatio = innerRatio;
+	sp.twist = twist;
 
 	ri->useMap     = (sp.type == shapes::Shape::Map) ? 1 : 0;
 	ri->mapWorld   = (mapWorld && mapWorld->data && mapWorld->width > 0) ? mapWorld : NULL;
@@ -247,6 +260,9 @@ Render(PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *params[], PF_Layer
 		params[RAMP_REPEAT]->u.pd.value - 1,
 		(float)params[RAMP_OFFSET]->u.fs_d.value,
 		params[RAMP_REVERSE]->u.bd.value,
+		(int)(params[RAMP_SIDES]->u.fs_d.value + 0.5),
+		(float)(params[RAMP_STAR_RATIO]->u.fs_d.value / 100.0),
+		(float)params[RAMP_TWIST]->u.fs_d.value,
 		params[RAMP_SPACE]->u.pd.value - 1,
 		params[RAMP_HUE]->u.pd.value - 1,
 		mw,
@@ -312,11 +328,13 @@ SmartRender(PF_InData *in_data, PF_OutData *out_data, PF_SmartRenderExtra *extra
 	PF_PixelFormat  format = PF_PixelFormat_INVALID;
 	PF_Point        origin = {0,0};
 
-	PF_ParamDef p_grad, p_shape, p_start, p_end, p_repeat, p_offset, p_reverse, p_space, p_hue, p_inb, p_inw;
+	PF_ParamDef p_grad, p_shape, p_start, p_end, p_repeat, p_offset, p_reverse, p_space, p_hue, p_inb, p_inw,
+				p_sides, p_star, p_twist;
 	AEFX_CLR_STRUCT(p_grad);   AEFX_CLR_STRUCT(p_shape);  AEFX_CLR_STRUCT(p_start);
 	AEFX_CLR_STRUCT(p_end);    AEFX_CLR_STRUCT(p_repeat); AEFX_CLR_STRUCT(p_offset);
 	AEFX_CLR_STRUCT(p_reverse);AEFX_CLR_STRUCT(p_space);  AEFX_CLR_STRUCT(p_hue);
 	AEFX_CLR_STRUCT(p_inb);    AEFX_CLR_STRUCT(p_inw);
+	AEFX_CLR_STRUCT(p_sides);  AEFX_CLR_STRUCT(p_star);   AEFX_CLR_STRUCT(p_twist);
 
 #define RAMP_CO(IDX, VAR) ERR(PF_CHECKOUT_PARAM(in_data, (IDX), in_data->current_time, \
 								in_data->time_step, in_data->time_scale, &(VAR)))
@@ -324,6 +342,7 @@ SmartRender(PF_InData *in_data, PF_OutData *out_data, PF_SmartRenderExtra *extra
 	RAMP_CO(RAMP_END,      p_end);   RAMP_CO(RAMP_REPEAT, p_repeat); RAMP_CO(RAMP_OFFSET, p_offset);
 	RAMP_CO(RAMP_REVERSE,  p_reverse);RAMP_CO(RAMP_SPACE, p_space);  RAMP_CO(RAMP_HUE,    p_hue);
 	RAMP_CO(RAMP_IN_BLACK, p_inb);   RAMP_CO(RAMP_IN_WHITE, p_inw);
+	RAMP_CO(RAMP_SIDES,    p_sides); RAMP_CO(RAMP_STAR_RATIO, p_star); RAMP_CO(RAMP_TWIST, p_twist);
 #undef RAMP_CO
 
 	// Must checkout at least one input BEFORE checkout_output. We don't use the
@@ -343,6 +362,7 @@ SmartRender(PF_InData *in_data, PF_OutData *out_data, PF_SmartRenderExtra *extra
 			(float)FIX_2_FLOAT(p_start.u.td.x_value), (float)FIX_2_FLOAT(p_start.u.td.y_value),
 			(float)FIX_2_FLOAT(p_end.u.td.x_value),   (float)FIX_2_FLOAT(p_end.u.td.y_value),
 			p_repeat.u.pd.value - 1, (float)p_offset.u.fs_d.value, p_reverse.u.bd.value,
+			(int)(p_sides.u.fs_d.value + 0.5), (float)(p_star.u.fs_d.value / 100.0), (float)p_twist.u.fs_d.value,
 			p_space.u.pd.value - 1, p_hue.u.pd.value - 1,
 			mapWorld, (float)(p_inb.u.fs_d.value / 100.0), (float)(p_inw.u.fs_d.value / 100.0),
 			&ri);
@@ -380,6 +400,8 @@ SmartRender(PF_InData *in_data, PF_OutData *out_data, PF_SmartRenderExtra *extra
 	ERR2(PF_CHECKIN_PARAM(in_data, &p_reverse));ERR2(PF_CHECKIN_PARAM(in_data, &p_space));
 	ERR2(PF_CHECKIN_PARAM(in_data, &p_hue));
 	ERR2(PF_CHECKIN_PARAM(in_data, &p_inb));    ERR2(PF_CHECKIN_PARAM(in_data, &p_inw));
+	ERR2(PF_CHECKIN_PARAM(in_data, &p_sides));  ERR2(PF_CHECKIN_PARAM(in_data, &p_star));
+	ERR2(PF_CHECKIN_PARAM(in_data, &p_twist));
 	return err;
 }
 

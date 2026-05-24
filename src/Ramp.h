@@ -60,6 +60,9 @@ enum {
 	RAMP_REPEAT,		// popup: tiling
 	RAMP_OFFSET,		// float: phase offset [-1,1]
 	RAMP_REVERSE,		// checkbox
+	RAMP_SIDES,			// slider: polygon sides / star points
+	RAMP_STAR_RATIO,	// float: star inner ratio [0,1]
+	RAMP_TWIST,			// float: spiral turns
 	RAMP_SPACE,			// popup: interpolation space
 	RAMP_HUE,			// popup: hue path
 	RAMP_MAP,			// layer: grayscale source (From Map shape)
@@ -80,12 +83,16 @@ enum {
 	HUE_DISK_ID,
 	MAP_DISK_ID,
 	IN_BLACK_DISK_ID,
-	IN_WHITE_DISK_ID
+	IN_WHITE_DISK_ID,
+	SIDES_DISK_ID,
+	STAR_RATIO_DISK_ID,
+	TWIST_DISK_ID
 };
 
-// Popup order MUST match shapes::Shape (Linear,Radial,Angular,Reflected,Diamond,Map).
-#define RAMP_SHAPE_CHOICES	"Linear|Radial|Angular|Reflected|Diamond|From Map"
-#define RAMP_SHAPE_COUNT	6
+// Popup order MUST match shapes::Shape
+// (Linear,Radial,Angular,Reflected,Diamond,Ellipse,Star,Polygon,Spiral,Square,Map).
+#define RAMP_SHAPE_CHOICES	"Linear|Radial|Angular|Reflected|Diamond|Ellipse|Star|Polygon|Spiral|Square|From Map"
+#define RAMP_SHAPE_COUNT	11
 #define RAMP_SHAPE_DFLT		1	// Linear
 
 // Popup order MUST match shapes::Repeat (None,Repeat,Mirror).
