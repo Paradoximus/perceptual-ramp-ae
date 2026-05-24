@@ -68,6 +68,8 @@ enum {
 	RAMP_MAP,			// layer: grayscale source (From Map shape)
 	RAMP_IN_BLACK,		// float: map input black level [0,1]
 	RAMP_IN_WHITE,		// float: map input white level [0,1]
+	RAMP_BLEND,			// popup: blend mode over input
+	RAMP_OPACITY,		// float: effect opacity [0,1]
 	RAMP_NUM_PARAMS
 };
 
@@ -86,8 +88,15 @@ enum {
 	IN_WHITE_DISK_ID,
 	SIDES_DISK_ID,
 	STAR_RATIO_DISK_ID,
-	TWIST_DISK_ID
+	TWIST_DISK_ID,
+	BLEND_DISK_ID,
+	OPACITY_DISK_ID
 };
+
+// Popup order MUST match cm::Blend.
+#define RAMP_BLEND_CHOICES	"Normal|Multiply|Screen|Overlay|Darken|Lighten|Add|Subtract|Difference|Hard Light|Soft Light"
+#define RAMP_BLEND_COUNT	11
+#define RAMP_BLEND_DFLT		1	// Normal
 
 // Popup order MUST match shapes::Shape
 // (Linear,Radial,Angular,Reflected,Diamond,Ellipse,Star,Polygon,Spiral,Square,Map).
@@ -156,6 +165,9 @@ typedef struct {
 	PF_EffectWorld		*mapWorld;	// grayscale source (NULL if none); same bit-depth as output
 	float				inputBlack;	// luma remap low  [0,1]
 	float				inputWhite;	// luma remap high [0,1]
+
+	int					blend;		// cm::Blend
+	float				opacity;	// [0,1]
 } RampRenderInfo;
 
 /* ----- Entry ----- */

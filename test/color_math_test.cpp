@@ -175,6 +175,25 @@ static void test_evaluate_gradient() {
     checkApprox(am.a, 0.5f, 1e-3f, "grad alpha mid");
 }
 
+static void test_blend() {
+    std::printf("Blend modes\n");
+    RGB b = {0.4f, 0.6f, 0.8f};
+    checkApprox(blend_channel(Blend::Normal, b.r, 0.5f), 0.5f, 1e-6f, "normal=src");
+    checkApprox(blend_channel(Blend::Multiply, 0.7f, 0.0f), 0.0f, 1e-6f, "mult*black");
+    checkApprox(blend_channel(Blend::Multiply, 0.7f, 1.0f), 0.7f, 1e-6f, "mult*white");
+    checkApprox(blend_channel(Blend::Screen, 0.3f, 1.0f), 1.0f, 1e-6f, "screen white");
+    checkApprox(blend_channel(Blend::Darken, 0.3f, 0.7f), 0.3f, 1e-6f, "darken");
+    checkApprox(blend_channel(Blend::Lighten, 0.3f, 0.7f), 0.7f, 1e-6f, "lighten");
+    checkApprox(blend_channel(Blend::Difference, 0.3f, 0.7f), 0.4f, 1e-6f, "difference");
+    // composite coverage 0 -> base, 1 -> source (Normal)
+    RGBA c0 = composite(Blend::Normal, b, 1.0f, {0.1f, 0.2f, 0.3f, 1.0f}, 0.0f);
+    checkApprox(c0.r, b.r, 1e-6f, "composite cov0");
+    RGBA c1 = composite(Blend::Normal, b, 1.0f, {0.1f, 0.2f, 0.3f, 1.0f}, 1.0f);
+    checkApprox(c1.r, 0.1f, 1e-6f, "composite cov1");
+    RGBA ch = composite(Blend::Normal, {0, 0, 0}, 1.0f, {1, 1, 1, 1}, 0.5f);
+    checkApprox(ch.r, 0.5f, 1e-6f, "composite half opacity");
+}
+
 int main() {
     std::printf("=== color_math unit tests ===\n");
     test_srgb_transfer();
@@ -187,6 +206,7 @@ int main() {
     test_gamut_map();
     test_no_muddy_dip();
     test_evaluate_gradient();
+    test_blend();
 
     std::printf("\n%d/%d checks passed.\n", g_total - g_fail, g_total);
     if (g_fail) { std::printf("RESULT: FAIL (%d)\n", g_fail); return 1; }

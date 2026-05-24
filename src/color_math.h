@@ -69,6 +69,12 @@ enum class HuePath : int { Shorter = 0, Longer, Increasing, Decreasing };
 // Per-segment easing of the local parameter.
 enum class Easing : int { Linear = 0, Smooth, Ease };
 
+// Blend modes for compositing the gradient over the input layer.
+enum class Blend : int {
+    Normal = 0, Multiply, Screen, Overlay, Darken, Lighten,
+    Add, Subtract, Difference, HardLight, SoftLight
+};
+
 // --------------------------------------------------------------------------
 // sRGB transfer function
 // --------------------------------------------------------------------------
@@ -424,6 +430,45 @@ inline RGBA evaluate_gradient(const Stop* stops, int n, float t,
     RGB rgb = mix(c0, c1, lt, space, hue);
     float a = lerpf(s0.color.a, s1.color.a, lt);
     return { rgb.r, rgb.g, rgb.b, a };
+}
+
+// --------------------------------------------------------------------------
+// Blend modes. b = base (input/backdrop), s = source (gradient). Channels in
+// nominal [0,1]; out-of-range results (Add/Subtract/Difference) are left for
+// the caller to clamp at write time.
+// --------------------------------------------------------------------------
+inline float blend_channel(Blend m, float b, float s) {
+    switch (m) {
+        case Blend::Normal:     return s;
+        case Blend::Multiply:   return b * s;
+        case Blend::Screen:     return 1.0f - (1.0f - b) * (1.0f - s);
+        case Blend::Overlay:    return b < 0.5f ? 2.0f * b * s : 1.0f - 2.0f * (1.0f - b) * (1.0f - s);
+        case Blend::Darken:     return b < s ? b : s;
+        case Blend::Lighten:    return b > s ? b : s;
+        case Blend::Add:        return b + s;
+        case Blend::Subtract:   return b - s;
+        case Blend::Difference: return std::fabs(b - s);
+        case Blend::HardLight:  return s < 0.5f ? 2.0f * b * s : 1.0f - 2.0f * (1.0f - b) * (1.0f - s);
+        case Blend::SoftLight:  return (1.0f - 2.0f * s) * b * b + 2.0f * s * b;   // Pegtop
+    }
+    return s;
+}
+inline RGB blend_rgb(Blend m, RGB b, RGB s) {
+    return { blend_channel(m, b.r, s.r), blend_channel(m, b.g, s.g), blend_channel(m, b.b, s.b) };
+}
+
+// Composite gradient color `g` over backdrop `base` with a blend mode and a
+// source coverage `cov` (= gradient alpha * effect opacity). Returns straight
+// RGBA. RGB may exceed [0,1] for additive modes; caller clamps for 8/16-bit.
+inline RGBA composite(Blend m, RGB base, float baseA, RGBA g, float cov) {
+    cov = clamp01(cov * g.a);
+    RGB bl = blend_rgb(m, base, { g.r, g.g, g.b });
+    return {
+        lerpf(base.r, bl.r, cov),
+        lerpf(base.g, bl.g, cov),
+        lerpf(base.b, bl.b, cov),
+        baseA + cov * (1.0f - baseA)
+    };
 }
 
 // --------------------------------------------------------------------------

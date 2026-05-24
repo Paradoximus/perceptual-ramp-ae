@@ -64,38 +64,47 @@ static inline float MapLumaFloat(const PF_EffectWorld *w, A_long x, A_long y)
 }
 
 // ---------------------------------------------------------------------------
+static inline float RampGeomT(const RampRenderInfo *ri, A_long x, A_long y, float luma)
+{
+	return ri->useMap ? (ri->mapWorld ? MapT(ri, luma) : 0.0f)
+					  : shapes::shape_t(ri->shape, (float)x, (float)y);
+}
+
 static PF_Err RampFunc8(void *refcon, A_long x, A_long y, PF_Pixel8 *inP, PF_Pixel8 *outP)
 {
 	const RampRenderInfo *ri = reinterpret_cast<RampRenderInfo*>(refcon);
-	float t = ri->useMap ? (ri->mapWorld ? MapT(ri, MapLuma8(ri->mapWorld, x, y)) : 0.0f)
-						  : shapes::shape_t(ri->shape, (float)x, (float)y);
-	cm::RGBA c = EvalColor(ri, t);
-	outP->alpha = (A_u_char)(cm::clamp01(c.a) * PF_MAX_CHAN8 + 0.5f);
-	outP->red   = (A_u_char)(cm::clamp01(c.r) * PF_MAX_CHAN8 + 0.5f);
-	outP->green = (A_u_char)(cm::clamp01(c.g) * PF_MAX_CHAN8 + 0.5f);
-	outP->blue  = (A_u_char)(cm::clamp01(c.b) * PF_MAX_CHAN8 + 0.5f);
+	float luma = (ri->useMap && ri->mapWorld) ? MapLuma8(ri->mapWorld, x, y) : 0.0f;
+	cm::RGBA g = EvalColor(ri, RampGeomT(ri, x, y, luma));
+	cm::RGB base = { inP->red / (float)PF_MAX_CHAN8, inP->green / (float)PF_MAX_CHAN8, inP->blue / (float)PF_MAX_CHAN8 };
+	cm::RGBA o = cm::composite((cm::Blend)ri->blend, base, inP->alpha / (float)PF_MAX_CHAN8, g, ri->opacity);
+	outP->red   = (A_u_char)(cm::clamp01(o.r) * PF_MAX_CHAN8 + 0.5f);
+	outP->green = (A_u_char)(cm::clamp01(o.g) * PF_MAX_CHAN8 + 0.5f);
+	outP->blue  = (A_u_char)(cm::clamp01(o.b) * PF_MAX_CHAN8 + 0.5f);
+	outP->alpha = (A_u_char)(cm::clamp01(o.a) * PF_MAX_CHAN8 + 0.5f);
 	return PF_Err_NONE;
 }
 static PF_Err RampFunc16(void *refcon, A_long x, A_long y, PF_Pixel16 *inP, PF_Pixel16 *outP)
 {
 	const RampRenderInfo *ri = reinterpret_cast<RampRenderInfo*>(refcon);
-	float t = ri->useMap ? (ri->mapWorld ? MapT(ri, MapLuma16(ri->mapWorld, x, y)) : 0.0f)
-						  : shapes::shape_t(ri->shape, (float)x, (float)y);
-	cm::RGBA c = EvalColor(ri, t);
-	outP->alpha = (A_u_short)(cm::clamp01(c.a) * PF_MAX_CHAN16 + 0.5f);
-	outP->red   = (A_u_short)(cm::clamp01(c.r) * PF_MAX_CHAN16 + 0.5f);
-	outP->green = (A_u_short)(cm::clamp01(c.g) * PF_MAX_CHAN16 + 0.5f);
-	outP->blue  = (A_u_short)(cm::clamp01(c.b) * PF_MAX_CHAN16 + 0.5f);
+	float luma = (ri->useMap && ri->mapWorld) ? MapLuma16(ri->mapWorld, x, y) : 0.0f;
+	cm::RGBA g = EvalColor(ri, RampGeomT(ri, x, y, luma));
+	cm::RGB base = { inP->red / (float)PF_MAX_CHAN16, inP->green / (float)PF_MAX_CHAN16, inP->blue / (float)PF_MAX_CHAN16 };
+	cm::RGBA o = cm::composite((cm::Blend)ri->blend, base, inP->alpha / (float)PF_MAX_CHAN16, g, ri->opacity);
+	outP->red   = (A_u_short)(cm::clamp01(o.r) * PF_MAX_CHAN16 + 0.5f);
+	outP->green = (A_u_short)(cm::clamp01(o.g) * PF_MAX_CHAN16 + 0.5f);
+	outP->blue  = (A_u_short)(cm::clamp01(o.b) * PF_MAX_CHAN16 + 0.5f);
+	outP->alpha = (A_u_short)(cm::clamp01(o.a) * PF_MAX_CHAN16 + 0.5f);
 	return PF_Err_NONE;
 }
 static PF_Err RampFuncFloat(void *refcon, A_long x, A_long y, PF_PixelFloat *inP, PF_PixelFloat *outP)
 {
 	const RampRenderInfo *ri = reinterpret_cast<RampRenderInfo*>(refcon);
-	float t = ri->useMap ? (ri->mapWorld ? MapT(ri, MapLumaFloat(ri->mapWorld, x, y)) : 0.0f)
-						  : shapes::shape_t(ri->shape, (float)x, (float)y);
-	cm::RGBA c = EvalColor(ri, t);
-	outP->alpha = cm::clamp01(c.a);
-	outP->red   = c.r; outP->green = c.g; outP->blue = c.b;	// keep float range
+	float luma = (ri->useMap && ri->mapWorld) ? MapLumaFloat(ri->mapWorld, x, y) : 0.0f;
+	cm::RGBA g = EvalColor(ri, RampGeomT(ri, x, y, luma));
+	cm::RGB base = { inP->red, inP->green, inP->blue };
+	cm::RGBA o = cm::composite((cm::Blend)ri->blend, base, inP->alpha, g, ri->opacity);
+	outP->red = o.r; outP->green = o.g; outP->blue = o.b;	// keep float range
+	outP->alpha = cm::clamp01(o.a);
 	return PF_Err_NONE;
 }
 
@@ -178,6 +187,12 @@ ParamsSetup(PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *params[], PF_
 	AEFX_CLR_STRUCT(def);
 	PF_ADD_FLOAT_SLIDERX("Input White", 0, 100, 0, 100, 100, PF_Precision_TENTHS, PF_ValueDisplayFlag_PERCENT, 0, IN_WHITE_DISK_ID);
 
+	AEFX_CLR_STRUCT(def);
+	PF_ADD_POPUP("Blend Mode", RAMP_BLEND_COUNT, RAMP_BLEND_DFLT, RAMP_BLEND_CHOICES, BLEND_DISK_ID);
+
+	AEFX_CLR_STRUCT(def);
+	PF_ADD_FLOAT_SLIDERX("Opacity", 0, 100, 0, 100, 100, PF_Precision_TENTHS, PF_ValueDisplayFlag_PERCENT, 0, OPACITY_DISK_ID);
+
 	if (!err) {
 		PF_CustomUIInfo ci;
 		AEFX_CLR_STRUCT(ci);
@@ -202,6 +217,7 @@ BuildRenderInfo(PF_Handle arbH, AEGP_SuiteHandler &suites,
 				int sides, float innerRatio, float twist,
 				int space, int hue,
 				PF_EffectWorld *mapWorld, float inBlack, float inWhite,
+				int blend, float opacity,
 				RampRenderInfo *ri)
 {
 	AEFX_CLR_STRUCT(*ri);
@@ -234,6 +250,8 @@ BuildRenderInfo(PF_Handle arbH, AEGP_SuiteHandler &suites,
 	ri->mapWorld   = (mapWorld && mapWorld->data && mapWorld->width > 0) ? mapWorld : NULL;
 	ri->inputBlack = inBlack;
 	ri->inputWhite = inWhite;
+	ri->blend      = blend;
+	ri->opacity    = opacity;
 }
 
 static PF_Err
@@ -268,6 +286,8 @@ Render(PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *params[], PF_Layer
 		mw,
 		(float)(params[RAMP_IN_BLACK]->u.fs_d.value / 100.0),
 		(float)(params[RAMP_IN_WHITE]->u.fs_d.value / 100.0),
+		params[RAMP_BLEND]->u.pd.value - 1,
+		(float)(params[RAMP_OPACITY]->u.fs_d.value / 100.0),
 		&ri);
 
 	A_long linesL = output->extent_hint.bottom - output->extent_hint.top;
@@ -329,12 +349,13 @@ SmartRender(PF_InData *in_data, PF_OutData *out_data, PF_SmartRenderExtra *extra
 	PF_Point        origin = {0,0};
 
 	PF_ParamDef p_grad, p_shape, p_start, p_end, p_repeat, p_offset, p_reverse, p_space, p_hue, p_inb, p_inw,
-				p_sides, p_star, p_twist;
+				p_sides, p_star, p_twist, p_blend, p_opac;
 	AEFX_CLR_STRUCT(p_grad);   AEFX_CLR_STRUCT(p_shape);  AEFX_CLR_STRUCT(p_start);
 	AEFX_CLR_STRUCT(p_end);    AEFX_CLR_STRUCT(p_repeat); AEFX_CLR_STRUCT(p_offset);
 	AEFX_CLR_STRUCT(p_reverse);AEFX_CLR_STRUCT(p_space);  AEFX_CLR_STRUCT(p_hue);
 	AEFX_CLR_STRUCT(p_inb);    AEFX_CLR_STRUCT(p_inw);
 	AEFX_CLR_STRUCT(p_sides);  AEFX_CLR_STRUCT(p_star);   AEFX_CLR_STRUCT(p_twist);
+	AEFX_CLR_STRUCT(p_blend);  AEFX_CLR_STRUCT(p_opac);
 
 #define RAMP_CO(IDX, VAR) ERR(PF_CHECKOUT_PARAM(in_data, (IDX), in_data->current_time, \
 								in_data->time_step, in_data->time_scale, &(VAR)))
@@ -343,6 +364,7 @@ SmartRender(PF_InData *in_data, PF_OutData *out_data, PF_SmartRenderExtra *extra
 	RAMP_CO(RAMP_REVERSE,  p_reverse);RAMP_CO(RAMP_SPACE, p_space);  RAMP_CO(RAMP_HUE,    p_hue);
 	RAMP_CO(RAMP_IN_BLACK, p_inb);   RAMP_CO(RAMP_IN_WHITE, p_inw);
 	RAMP_CO(RAMP_SIDES,    p_sides); RAMP_CO(RAMP_STAR_RATIO, p_star); RAMP_CO(RAMP_TWIST, p_twist);
+	RAMP_CO(RAMP_BLEND,    p_blend); RAMP_CO(RAMP_OPACITY, p_opac);
 #undef RAMP_CO
 
 	// Must checkout at least one input BEFORE checkout_output. We don't use the
@@ -365,7 +387,12 @@ SmartRender(PF_InData *in_data, PF_OutData *out_data, PF_SmartRenderExtra *extra
 			(int)(p_sides.u.fs_d.value + 0.5), (float)(p_star.u.fs_d.value / 100.0), (float)p_twist.u.fs_d.value,
 			p_space.u.pd.value - 1, p_hue.u.pd.value - 1,
 			mapWorld, (float)(p_inb.u.fs_d.value / 100.0), (float)(p_inw.u.fs_d.value / 100.0),
+			p_blend.u.pd.value - 1, (float)(p_opac.u.fs_d.value / 100.0),
 			&ri);
+
+		// Iterate over the input layer (so the pixel fn sees inP for blending),
+		// writing to output. Fall back to output-as-source if no input world.
+		PF_EffectWorld *srcWorld = inputWorld ? inputWorld : output_worldP;
 
 		ERR(AEFX_AcquireSuite(in_data, out_data, kPFWorldSuite, kPFWorldSuiteVersion2,
 							  "Couldn't load suite.", (void**)&wsP));
@@ -375,15 +402,15 @@ SmartRender(PF_InData *in_data, PF_OutData *out_data, PF_SmartRenderExtra *extra
 			switch (format) {
 			case PF_PixelFormat_ARGB128:
 				ERR(suites.IterateFloatSuite2()->iterate_origin(in_data, 0, output_worldP->height,
-					output_worldP, NULL, &origin, (void*)&ri, RampFuncFloat, output_worldP));
+					srcWorld, NULL, &origin, (void*)&ri, RampFuncFloat, output_worldP));
 				break;
 			case PF_PixelFormat_ARGB64:
 				ERR(suites.Iterate16Suite2()->iterate_origin(in_data, 0, output_worldP->height,
-					output_worldP, NULL, &origin, (void*)&ri, RampFunc16, output_worldP));
+					srcWorld, NULL, &origin, (void*)&ri, RampFunc16, output_worldP));
 				break;
 			case PF_PixelFormat_ARGB32:
 				ERR(suites.Iterate8Suite2()->iterate_origin(in_data, 0, output_worldP->height,
-					output_worldP, NULL, &origin, (void*)&ri, RampFunc8, output_worldP));
+					srcWorld, NULL, &origin, (void*)&ri, RampFunc8, output_worldP));
 				break;
 			default:
 				err = PF_Err_BAD_CALLBACK_PARAM;
@@ -402,6 +429,7 @@ SmartRender(PF_InData *in_data, PF_OutData *out_data, PF_SmartRenderExtra *extra
 	ERR2(PF_CHECKIN_PARAM(in_data, &p_inb));    ERR2(PF_CHECKIN_PARAM(in_data, &p_inw));
 	ERR2(PF_CHECKIN_PARAM(in_data, &p_sides));  ERR2(PF_CHECKIN_PARAM(in_data, &p_star));
 	ERR2(PF_CHECKIN_PARAM(in_data, &p_twist));
+	ERR2(PF_CHECKIN_PARAM(in_data, &p_blend));  ERR2(PF_CHECKIN_PARAM(in_data, &p_opac));
 	return err;
 }
 
