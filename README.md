@@ -7,6 +7,11 @@ naïve sRGB blending.
 
 > Effect menu: **Effect → KPX → Perceptual Ramp** · Windows · AE 2025 / 2026
 
+### ⬇ Download the ready-to-use plug-in
+
+Grab the latest `.aex` here → **[Releases](https://github.com/Paradoximus/perceptual-ramp-ae/releases/latest)**,
+drop it into your After Effects `Plug-ins` folder, restart AE. No build needed.
+
 ![menu category KPX](docs/screenshot.png)
 
 ## Why
